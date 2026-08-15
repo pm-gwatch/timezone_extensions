@@ -18,7 +18,7 @@ jobs:
         # Pin the floor from pubspec.yaml as well as stable: development
         # happens on a much newer SDK, so this is the only check that the
         # declared floor actually works.
-        sdk: ['3.10.0', stable]
+        sdk: ['3.11.0', stable]
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
@@ -28,7 +28,7 @@ jobs:
       - run: dart analyze --fatal-infos
       # Formatter output drifts across SDK versions. Check it once, on the
       # declared floor, so the two matrix cells cannot disagree.
-      - if: matrix.sdk == '3.10.0'
+      - if: matrix.sdk == '3.11.0'
         run: dart format --output=none --set-exit-if-changed .
       - run: dart test
 

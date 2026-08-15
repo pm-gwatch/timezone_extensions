@@ -15,7 +15,7 @@ false_secrets:
   - /lib/src/generated/**
 
 environment:
-  sdk: ^3.10.0
+  sdk: ^3.11.0
 
 dependencies:
   timezone: ">=0.11.1 <1.0.0"

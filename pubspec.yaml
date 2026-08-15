@@ -1,0 +1,26 @@
+name: timezone_extensions
+description: >-
+  Add-on for package:timezone — convert a TZDateTime from one Location to 
+  another, and look up standard and daylight zone long names.
+version: 0.1.0
+repository: https://github.com/pm-gwatch/timezone_extensions
+issue_tracker: https://github.com/pm-gwatch/timezone_extensions/issues
+
+topics:
+  - timezone
+  - iana
+
+# Generated data can trip pub's secret scanner; not real credentials.
+false_secrets:
+  - /lib/src/generated/**
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  timezone: ">=0.11.1 <1.0.0"
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.31.2
+  http: ^1.6.0

@@ -1,0 +1,24 @@
+# Keeps CI actions and package dependencies current.
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates
+version: 2
+
+updates:
+  # Workflows pin major tags, which drift silently until a runner deprecation
+  # breaks them — actions/checkout@v4 already warns that its Node 20 runtime is
+  # deprecated and is being forced onto Node 24.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+
+  # A library declares ranges rather than pins, so these land rarely. They
+  # matter for security advisories, and for widening a constraint once the
+  # ecosystem moves past it.
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: deps

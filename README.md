@@ -88,5 +88,5 @@ Regenerate the CLDR tables with `dart run tool/generate_metazone_data.dart`.
 
 ## Licenses
 
-- **Code** — MIT ([`LICENSE`](LICENSE)).
-- **CLDR English names** — Unicode License v3 ([`THIRD_PARTY_LICENSES`](THIRD_PARTY_LICENSES)).
+- **Code** — MIT ([`LICENSE`](https://github.com/pm-gwatch/timezone_extensions/blob/main/LICENSE)).
+- **CLDR English names** — Unicode License v3 ([`THIRD_PARTY_LICENSES`](https://github.com/pm-gwatch/timezone_extensions/blob/main/THIRD_PARTY_LICENSES)).

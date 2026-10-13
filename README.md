@@ -1,12 +1,14 @@
 # timezone_extensions
 
-An add-on for [`package:timezone`](https://pub.dev/packages/timezone). It converts a `TZDateTime` from one `Location` to another and reads English time zone names.
+An add-on for [`package:timezone`](https://pub.dev/packages/timezone): convert a `TZDateTime` to another `Location`, and read English time zone names.
+
+These helpers first shipped in [`timezone_finder` 0.2.0](https://pub.dev/packages/timezone_finder/versions/0.2.0). They live here so you can use them without its `Location` search.
 
 ## Initialization
 
-⚠️ Load **`latest_all`** tzdata from `package:timezone` first. `latest` drops the tzdb link identifiers.
+⚠️ Load the **`latest_all`** tzdata from `package:timezone`, not the default `latest`, which drops the tzdb link identifiers.
 
-### VM, CLI, server, Flutter mobile and desktop
+### Native (VM, Flutter mobile and desktop)
 
 ```dart
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -18,9 +20,7 @@ void main() {
 }
 ```
 
-### Dart web and Flutter web
-
-⚠️ The browser default is `latest.tzf` → Pass `latest_all.tzf`.
+### Web (Dart and Flutter)
 
 ```dart
 import 'package:timezone/browser.dart' as tz;
@@ -34,16 +34,16 @@ Future<void> main() async {
 
 ## API
 
-### Get time zone names
+### Time zone names
 
 A `Location` is a place. A `TZDateTime` is a place **and** a moment.
 
-- `Location.timeZoneGenericName` — CLDR generic, or standard when the zone is not seasonal (`Pacific Time`, `Azerbaijan Time`). `null` for a handful of zones CLDR leaves unnamed.
-- `TZDateTime.timeZoneLongName` — name at this instant (`Pacific Daylight Time`, `Central European Summer Time`). `null` in a few cases; `timeZoneLongName ?? utcOffsetLabel` is never null.
-- `TZDateTime.utcOffsetLabel` — `UTC-07` / `UTC+04:30` / `UTC`.
-- `formatUtcOffset(Duration)` — the same formatter, for any offset.
+- `Location.timeZoneGenericName` — season-neutral name: `Pacific Time`, `India Standard Time`.
+- `TZDateTime.timeZoneLongName` — name at that moment: `Pacific Daylight Time`, `Central European Summer Time`.
+- `TZDateTime.utcOffsetLabel` — `UTC-07`, `UTC+04:30`, `UTC`.
+- `formatUtcOffset(Duration)` — the same label for any offset.
 
-> `TZDateTime.timeZoneName` is already on `package:timezone` (tzdb abbreviation: `PDT`, or a numeric form like `-03`).
+Both are `null` for the few zones CLDR leaves unnamed. `timeZoneLongName` is also `null` during daylight saving time when CLDR has no daylight name, as in Jersey in July. `timeZoneLongName ?? utcOffsetLabel` is never null. The abbreviation (`PDT`, `-03`) is `TZDateTime.timeZoneName`, already in `package:timezone`.
 
 ```dart
 final home = getLocation('America/Los_Angeles');
@@ -59,9 +59,10 @@ print(call.timeZoneName);     // PDT
 print(call.utcOffsetLabel);   // UTC-07
 ```
 
-### Convert the same instant to another clock
+### Convert to another clock
 
-`toLocation` is the `Location` analogue of `toUtc` / `toLocal`. `offsetDifference` is the signed gap between the two offsets at that instant — not travel time, and not `TZDateTime.difference` (elapsed time). Use `.abs()` for a directionless magnitude.
+- `toLocation(location)` — the same instant on `location`'s clock, like `toUtc` / `toLocal`.
+- `offsetDifference(location)` — how far ahead `location`'s clock is at this instant (negative if behind). Not elapsed time: that is `difference`.
 
 ```dart
 final hotel = getLocation('Australia/Sydney');
@@ -75,16 +76,14 @@ print(callInSydney.utcOffsetLabel);   // UTC+10
 print(call.offsetDifference(hotel));  // 17:00:00.000000 — Sydney is ahead
 ```
 
-Shipped data version: `cldrVersion`. It is independent of the tzdb version inside `package:timezone`.
+## Data
 
-## Data used
-
-| Dataset | Source | What it answers |
+| Dataset | Source | Used for |
 | --- | --- | --- |
 | English names | [Unicode CLDR](https://cldr.unicode.org) | `Pacific Time`, `Central European Summer Time`, … |
 | Zone rules | `package:timezone` (IANA tzdb) | Offsets, DST, abbreviations |
 
-Regenerate the CLDR tables with `dart run tool/generate_metazone_data.dart`.
+`cldrVersion` reports the bundled CLDR release, independent of the tzdb version in `package:timezone`. Regenerate the CLDR tables with `dart run tool/generate_metazone_data.dart`.
 
 ## Licenses
 

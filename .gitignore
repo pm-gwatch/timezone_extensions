@@ -11,3 +11,6 @@ pubspec.lock
 
 # Files and directories created by dart doc.
 doc/api/
+
+# Local review report. Not part of the published package.
+/docs/

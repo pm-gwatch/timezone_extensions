@@ -51,14 +51,18 @@ extension LocationZoneNames on Location {
   ///
   /// Not DST-aware. No abbreviation on [Location] — use
   /// [TZDateTime.timeZoneName] at an instant.
-  String? get timeZoneGenericName {
-    // CLDR keeps dated metazone memberships; now picks the current one.
-    final now = DateTime.timestamp().millisecondsSinceEpoch;
-    final lookup = _mergedLongNames(name, now);
-    if (lookup.names.generic != null) return lookup.names.generic;
-    if (lookup.meta?.daylight != null) return null;
-    return lookup.names.standard;
-  }
+  String? get timeZoneGenericName =>
+      // CLDR keeps dated metazone memberships; now picks the current one.
+      genericNameAt(name, DateTime.timestamp().millisecondsSinceEpoch);
+}
+
+/// [LocationZoneNames.timeZoneGenericName] for [ianaId] at [utcMilliseconds]
+/// instead of now, so the rule can be checked at fixed instants.
+String? genericNameAt(String ianaId, int utcMilliseconds) {
+  final lookup = _mergedLongNames(ianaId, utcMilliseconds);
+  if (lookup.names.generic != null) return lookup.names.generic;
+  if (lookup.meta?.daylight != null) return null;
+  return lookup.names.standard;
 }
 
 /// English labels for a [TZDateTime] at its instant.
@@ -69,6 +73,10 @@ extension TZDateTimeZoneNames on TZDateTime {
   /// `null` if that string is missing — no fallback to standard); otherwise
   /// `standard ?? generic`. For a label that is never null, use
   /// `timeZoneLongName ?? utcOffsetLabel`.
+  ///
+  /// The string is CLDR's label, not a DST flag: Dublin's daylight name is
+  /// *Irish Standard Time*. To branch on daylight saving, read
+  /// [TimeZone.isDst].
   String? get timeZoneLongName {
     final names = _mergedLongNames(location.name, millisecondsSinceEpoch).names;
     if (timeZone.isDst) return names.daylight;
@@ -77,19 +85,25 @@ extension TZDateTimeZoneNames on TZDateTime {
 
   /// Numeric UTC label at this instant. See [formatUtcOffset].
   ///
-  /// Never a letter code like `CEST`. Use `timeZoneOffset` for the exact
-  /// [Duration]; [TZDateTimeAcrossLocations.offsetDifference] for the gap to
-  /// another place.
+  /// Never a letter code like `CEST`. Use [TZDateTime.timeZoneOffset] for the
+  /// exact [Duration]; [TZDateTimeAcrossLocations.offsetDifference] for the gap
+  /// to another place.
   String get utcOffsetLabel => formatUtcOffset(timeZoneOffset);
 }
 
 /// CLDR zone overlay plus the metazone record at [utcMilliseconds].
+///
+/// CLDR keys both tables by its own zone id; [ianaId] is the fallback, as in
+/// the build gate of `tool/generate_metazone_data.dart`.
 ({MetazoneLongNames names, MetazoneLongNames? meta}) _mergedLongNames(
   String ianaId,
   int utcMilliseconds,
 ) {
   final cldrKey = ianaToCldrZoneKey[ianaId] ?? ianaId;
-  final metazoneId = metazoneIdAt(cldrKey, utcMilliseconds);
+  final historyKey = zoneMetazoneHistory.containsKey(cldrKey)
+      ? cldrKey
+      : ianaId;
+  final metazoneId = metazoneIdAt(historyKey, utcMilliseconds);
   final zone = zoneLongNames[cldrKey] ?? zoneLongNames[ianaId];
   final meta = metazoneId == null ? null : metazoneLongNames[metazoneId];
   return (
@@ -102,7 +116,8 @@ extension TZDateTimeZoneNames on TZDateTime {
   );
 }
 
-/// Metazone id whose half-open UTC range contains [utcMilliseconds].
+/// Metazone id whose half-open UTC range contains [utcMilliseconds], or `null`
+/// if [cldrZoneKey] belongs to no metazone at that instant.
 String? metazoneIdAt(String cldrZoneKey, int utcMilliseconds) {
   final ranges = zoneMetazoneHistory[cldrZoneKey];
   if (ranges == null) return null;

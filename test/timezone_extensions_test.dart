@@ -1,5 +1,6 @@
-// Location / TZDateTime helpers: toLocation, offsetDifference.
-// Uses latest_all (latest is a separate process in timezone_finder).
+// Public API: toLocation, offsetDifference, and what the library exports.
+// Imports only package:timezone_extensions/timezone_extensions.dart, never
+// src/, so a dropped export fails to compile here.
 
 import 'package:test/test.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -54,11 +55,13 @@ void main() {
     });
 
     test('tracks daylight saving rather than a fixed offset', () {
-      // The reason a Location is not an offset: the same pair of zones is
-      // 6 hours apart in August and 6 hours apart in January only because
-      // both happen to shift. New York alone moves by an hour.
+      // Noon in Paris is 06:00 in New York in both seasons, but New York's
+      // offset differs by an hour: the result follows each zone's rules at
+      // the instant. The hours also catch a conversion that kept noon.
       final summer = TZDateTime(paris, 2026, 8, 23, 12).toLocation(newYork);
       final winter = TZDateTime(paris, 2026, 1, 23, 12).toLocation(newYork);
+      expect(summer.hour, 6);
+      expect(winter.hour, 6);
       expect(summer.timeZoneOffset, const Duration(hours: -4));
       expect(winter.timeZoneOffset, const Duration(hours: -5));
     });
@@ -83,7 +86,7 @@ void main() {
       expect(call.offsetDifference(kiritimati), const Duration(hours: 25));
     });
 
-    test('changes exactly at a DST transition', () {
+    test('changes exactly when clocks go forward', () {
       final before = TZDateTime.from(
         DateTime.utc(2026, 3, 29, 0, 59, 59, 999),
         paris,
@@ -91,6 +94,18 @@ void main() {
       final after = TZDateTime.from(DateTime.utc(2026, 3, 29, 1), paris);
       expect(before.offsetDifference(tokyo), const Duration(hours: 8));
       expect(after.offsetDifference(tokyo), const Duration(hours: 7));
+    });
+
+    test('changes exactly when clocks go back', () {
+      // 02:00–03:00 happens twice in Paris that night; each instant still has
+      // one offset.
+      final before = TZDateTime.from(
+        DateTime.utc(2026, 10, 25, 0, 59, 59, 999),
+        paris,
+      );
+      final after = TZDateTime.from(DateTime.utc(2026, 10, 25, 1), paris);
+      expect(before.offsetDifference(tokyo), const Duration(hours: 7));
+      expect(after.offsetDifference(tokyo), const Duration(hours: 8));
     });
 
     test('is zero for the same location', () {
@@ -118,4 +133,15 @@ void main() {
   // There is no Location.offsetDifference: a clock gap is a fact about an
   // instant, and TZDateTime is the receiver that carries one. Holding two
   // places and no moment, ask TZDateTime.now(a).offsetDifference(b).
+
+  group('library exports', () {
+    test('names, labels, and cldrVersion come from the public import', () {
+      final noon = TZDateTime(paris, 2026, 1, 15, 12);
+      expect(paris.timeZoneGenericName, 'Central European Time');
+      expect(noon.timeZoneLongName, 'Central European Standard Time');
+      expect(noon.utcOffsetLabel, 'UTC+01');
+      expect(formatUtcOffset(const Duration(hours: 1)), 'UTC+01');
+      expect(cldrVersion, isNotEmpty);
+    });
+  });
 }

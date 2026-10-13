@@ -3,8 +3,8 @@
 ///     dart run tool/generate_metazone_data.dart
 ///
 /// Fetches metaZones, en-001 timeZoneNames, and BCP-47 timezone aliases from
-/// `unicode-org/cldr-json` **main** (not a pinned CLDR release). Emits the
-/// full tables. Fails unless every `package:timezone` `latest_all` id has a
+/// `unicode-org/cldr-json` at the release tag [_cldrJsonTag]. Emits the full
+/// tables. Fails unless every `package:timezone` `latest_all` id has a
 /// current generic name — or standard when the metazone has no daylight
 /// name — except the known gaps in [_knownNullMetazoneNameNow].
 library;
@@ -16,11 +16,20 @@ import 'package:http/http.dart' as http;
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart';
 
+/// CLDR release to build from. Not `main`: it carries the next release's
+/// pre-release data while still reporting the previous version number.
+/// Bump deliberately, then re-check [_knownNullMetazoneNameNow] and its copies
+/// in `test/zone_names_test.dart`.
+const _cldrJsonTag = '48.0.0';
+
 const _cldrJsonBase =
-    'https://raw.githubusercontent.com/unicode-org/cldr-json/main/cldr-json';
+    'https://raw.githubusercontent.com/unicode-org/cldr-json/$_cldrJsonTag/cldr-json';
 
 /// Ids whose current `Location.timeZoneGenericName` is expected to be null
 /// (no current membership, or a current metazone with no en-001 long names).
+///
+/// Mirrored by `_cldrGaps` in `test/zone_names_test.dart`, whose July set adds
+/// the zones that observe DST with no daylight name. Change them together.
 const _knownNullMetazoneNameNow = <String>{
   'Africa/Casablanca',
   'Africa/El_Aaiun',
@@ -62,7 +71,7 @@ const _knownNullMetazoneNameNow = <String>{
 };
 
 Future<void> main(List<String> args) async {
-  stdout.writeln('Fetching CLDR JSON …');
+  stdout.writeln('Fetching CLDR JSON $_cldrJsonTag …');
   final metaZones = await _getJson(
     '$_cldrJsonBase/cldr-core/supplemental/metaZones.json',
   );

@@ -40,7 +40,7 @@ A `Location` is a place. A `TZDateTime` is a place **and** a moment.
 - `TZDateTime.timeZoneSpecificName` — standard or daylight name at that moment: `Pacific Daylight Time`, `Central European Summer Time`.
 - `TZDateTime.utcOffsetLabel` — `UTC-07`, `UTC+04:30`, `UTC`.
 
-The name getters return `null` when CLDR has no label (or no daylight label during DST, as in Jersey in July). `timeZoneSpecificName ?? utcOffsetLabel` is never null. The abbreviation (`PDT`, `-03`) is `TZDateTime.timeZoneName` from `package:timezone`.
+`TZDateTime.timeZoneName` from `package:timezone` is one abbreviation: letters (`PDT`) or digits (`-03`). `Location.timeZoneGenericName` and `TZDateTime.timeZoneSpecificName` are `null` when CLDR has no label, including no daylight label during DST (Jersey in July). `timeZoneSpecificName ?? utcOffsetLabel` is never null.
 
 ```dart
 final officeLocation = getLocation('America/Los_Angeles');

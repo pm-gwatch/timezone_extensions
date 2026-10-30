@@ -1,4 +1,5 @@
 // Public API: toLocation, offsetDifference, and what the library exports.
+// Zone names and utcOffsetLabel are covered in test/zone_names_test.dart.
 // Imports only package:timezone_extensions/timezone_extensions.dart, never
 // src/, so a dropped export fails to compile here.
 
@@ -30,12 +31,12 @@ void main() {
 
   group('TZDateTime.toLocation', () {
     test('keeps the instant and changes the wall clock', () {
-      final takeOff = TZDateTime(paris, 2026, 8, 23, 10, 15);
+      final takeOff = TZDateTime(paris, 2026, 8, 23, 10, 15, 30, 123, 456);
       final there = takeOff.toLocation(newYork);
 
       expect(
-        there.millisecondsSinceEpoch,
-        takeOff.millisecondsSinceEpoch,
+        there.microsecondsSinceEpoch,
+        takeOff.microsecondsSinceEpoch,
         reason: 'toLocation must not move the moment',
       );
       expect(there.location, same(newYork));
@@ -43,7 +44,7 @@ void main() {
       expect(there.day, 23);
     });
 
-    test('crosses the date line where the zones require it', () {
+    test('moves to the next calendar day where the offsets require it', () {
       final evening = TZDateTime(paris, 2026, 8, 23, 23, 30);
       expect(evening.toLocation(tokyo).day, 24);
       expect(evening.toLocation(newYork).day, 23);
@@ -64,6 +65,13 @@ void main() {
       expect(winter.hour, 6);
       expect(summer.timeZoneOffset, const Duration(hours: -4));
       expect(winter.timeZoneOffset, const Duration(hours: -5));
+
+      // Tokyo does not observe DST, so the gap changes. A fixed six-hour
+      // shift would still pass the New York pair above.
+      final tokyoSummer = TZDateTime(paris, 2026, 8, 23, 12).toLocation(tokyo);
+      final tokyoWinter = TZDateTime(paris, 2026, 1, 23, 12).toLocation(tokyo);
+      expect(tokyoSummer.hour, 19); // CEST (UTC+2) to JST (UTC+9)
+      expect(tokyoWinter.hour, 20); // CET (UTC+1) to JST (UTC+9)
     });
   });
 
@@ -71,6 +79,11 @@ void main() {
     test('positive when the other location is ahead', () {
       final call = TZDateTime(paris, 2026, 8, 3, 15);
       expect(call.offsetDifference(tokyo), const Duration(hours: 7));
+    });
+
+    test('negative when the other location is behind', () {
+      final call = TZDateTime(paris, 2026, 8, 3, 15);
+      expect(call.offsetDifference(newYork), const Duration(hours: -6));
     });
 
     test('preserves sub-hour offsets', () {
@@ -138,10 +151,9 @@ void main() {
     test('names, labels, and cldrVersion come from the public import', () {
       final noon = TZDateTime(paris, 2026, 1, 15, 12);
       expect(paris.timeZoneGenericName, 'Central European Time');
-      expect(noon.timeZoneLongName, 'Central European Standard Time');
+      expect(noon.timeZoneSpecificName, 'Central European Standard Time');
       expect(noon.utcOffsetLabel, 'UTC+01');
-      expect(formatUtcOffset(const Duration(hours: 1)), 'UTC+01');
-      expect(cldrVersion, isNotEmpty);
+      expect(cldrVersion, '48');
     });
   });
 }

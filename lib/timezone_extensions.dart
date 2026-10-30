@@ -8,14 +8,15 @@
 /// paris.timeZoneGenericName; // 'Central European Time'
 ///
 /// final takeOff = TZDateTime(paris, 2026, 8, 23, 10, 15);
-/// takeOff.toLocation(newYork); // 04:15, the same moment
-/// takeOff.timeZoneLongName;    // 'Central European Summer Time'
-/// takeOff.utcOffsetLabel;      // 'UTC+02'
+/// takeOff.toLocation(newYork);  // 04:15, the same moment
+/// takeOff.timeZoneSpecificName; // 'Central European Summer Time'
+/// takeOff.utcOffsetLabel;       // 'UTC+02'
 /// ```
 ///
-/// Initialize **`latest_all`** tzdata first. `latest` drops the tzdb link
-/// identifiers. Convert across places with
-/// [TZDateTimeAcrossLocations.toLocation].
+/// Initialize **`latest_all`** tzdata first. `latest` omits tzdb links,
+/// including `Europe/Amsterdam`, `Europe/Stockholm`, and `US/Pacific`.
+///
+/// Convert across places with [TZDateTimeAcrossLocations.toLocation].
 library;
 
 export 'src/timezone_extensions.dart'
@@ -23,5 +24,4 @@ export 'src/timezone_extensions.dart'
         LocationZoneNames,
         TZDateTimeAcrossLocations,
         TZDateTimeZoneNames,
-        formatUtcOffset,
         cldrVersion;

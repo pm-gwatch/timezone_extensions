@@ -4,9 +4,11 @@
 ///
 /// Fetches metaZones, en-001 timeZoneNames, and BCP-47 timezone aliases from
 /// `unicode-org/cldr-json` at the release tag [_cldrJsonTag]. Emits the full
-/// tables. Fails unless every `package:timezone` `latest_all` id has a
-/// current generic name — or standard when the metazone has no daylight
-/// name — except the known gaps in [_knownNullMetazoneNameNow].
+/// tables. Fails when a metazone-history or zone-long-name key is a BCP-47
+/// alias, when a `latest_all` id has no selected name now and is not in
+/// [_knownNullMetazoneNameNow], or when an id in that set now has a name.
+/// The selected name is the generic name, or the standard name when the
+/// metazone has no daylight name.
 library;
 
 import 'dart:convert';
@@ -16,10 +18,15 @@ import 'package:http/http.dart' as http;
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart';
 
-/// CLDR release to build from. Not `main`: it carries the next release's
-/// pre-release data while still reporting the previous version number.
-/// Bump deliberately, then re-check [_knownNullMetazoneNameNow] and its copies
-/// in `test/zone_names_test.dart`.
+/// CLDR release to build from. A release tag, so regeneration is
+/// reproducible. Between releases, `main` can carry pre-release data under
+/// the previous version number.
+///
+/// Bump deliberately, then re-check [_knownNullMetazoneNameNow]; in
+/// `test/zone_names_test.dart`, `_cldrGaps`, `expectedJuly`, and the
+/// `expected` set of the GMT coverage test; the `cldrVersion` pin (`'48'`)
+/// in `test/timezone_extensions_test.dart`; and the GMT zone list in the
+/// `timeZoneGenericName` dartdoc.
 const _cldrJsonTag = '48.0.0';
 
 const _cldrJsonBase =
@@ -28,8 +35,9 @@ const _cldrJsonBase =
 /// Ids whose current `Location.timeZoneGenericName` is expected to be null
 /// (no current membership, or a current metazone with no en-001 long names).
 ///
-/// Mirrored by `_cldrGaps` in `test/zone_names_test.dart`, whose July set adds
-/// the zones that observe DST with no daylight name. Change them together.
+/// Mirrored by `_cldrGaps` in `test/zone_names_test.dart`. The coverage
+/// test's `expectedJuly` adds the zones that observe DST with no daylight
+/// name. Change them together.
 const _knownNullMetazoneNameNow = <String>{
   'Africa/Casablanca',
   'Africa/El_Aaiun',
@@ -117,6 +125,19 @@ Future<void> main(List<String> args) async {
       key: _parseRanges(value),
   };
 
+  final aliasTableKeys = {
+    ...parsedHistory.keys,
+    ...zoneLong.keys,
+  }.where(ianaToCldr.containsKey).toList()..sort();
+  if (aliasTableKeys.isNotEmpty) {
+    stderr.writeln('CLDR table key is a BCP-47 alias:');
+    for (final key in aliasTableKeys) {
+      stderr.writeln('  $key -> ${ianaToCldr[key]}');
+    }
+    exitCode = 1;
+    return;
+  }
+
   final nowMs = DateTime.timestamp().millisecondsSinceEpoch;
   final nullNow = <String>[];
   final unexpectedNull = <String>[];
@@ -124,9 +145,9 @@ Future<void> main(List<String> args) async {
 
   for (final name in locationNames) {
     final cldrKey = ianaToCldr[name] ?? name;
-    final ranges = parsedHistory[cldrKey] ?? parsedHistory[name];
+    final ranges = parsedHistory[cldrKey];
     final mzId = ranges == null ? null : _metazoneAt(ranges, nowMs);
-    final zone = zoneLong[cldrKey] ?? zoneLong[name];
+    final zone = zoneLong[cldrKey];
     final meta = mzId == null ? null : metazoneLong[mzId];
     final generic = zone?.generic ?? meta?.generic;
     final standard = zone?.standard ?? meta?.standard;

@@ -10,18 +10,21 @@ void main() {
 
   print('${paris.name} → ${paris.timeZoneGenericName}');
   // Europe/Paris → Central European Time
+  print('${newYork.name} → ${newYork.timeZoneGenericName}');
+  // America/New_York → Eastern Time
 
   final takeOff = TZDateTime(paris, 2026, 8, 23, 10, 15);
-  final there = takeOff.toLocation(newYork);
 
   print(takeOff); // 2026-08-23 10:15:00.000+0200
-  print(takeOff.timeZoneLongName); // Central European Summer Time
+  print(takeOff.timeZoneSpecificName); // Central European Summer Time
   print(takeOff.utcOffsetLabel); // UTC+02
 
-  print(there); // 2026-08-23 04:15:00.000-0400
-  print(there.timeZoneLongName); // Eastern Daylight Time
-  print(there.utcOffsetLabel); // UTC-04
+  final flightDuration = Duration(hours: 8, minutes: 30);
+  final arrival = takeOff.add(flightDuration).toLocation(newYork);
 
-  print(takeOff.offsetDifference(newYork)); // -6:00:00.000000
-  print('CLDR: $cldrVersion');
+  print(arrival); // 2026-08-23 12:45:00.000-0400
+  print(arrival.timeZoneSpecificName); // Eastern Daylight Time
+  print(arrival.utcOffsetLabel); // UTC-04
+
+  print('Unicode CLDR: $cldrVersion');
 }
